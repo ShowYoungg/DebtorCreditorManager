@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".AccountActivity">
+
+    <TextView
+        android:id="@+id/name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="SOYOMBO SOYInKA"
+        android:textAllCaps="true"
+        android:textSize="25sp"
+        android:layout_margin="10dp"
+        android:gravity="center_horizontal"
+        android:textColor="@color/colorPrimary"/>
+
+    <TextView
+        android:id="@+id/balance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="BAL: NGN25000"
+        android:textColor="@color/colorPrimary"
+        android:layout_below="@+id/name"
+        android:textSize="20sp"
+        android:layout_marginStart="10dp"/>
+
+    <TextView
+        android:id="@+id/disbursement"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="DISB: NGN45000"
+        android:textColor="@color/colorPrimary"
+        android:layout_below="@id/name"
+        android:layout_alignParentEnd="true"
+        android:textSize="20sp"
+        android:layout_marginEnd="10dp"/>
+
+    <TextView
+        android:id="@+id/address"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/balance"
+        android:text="10 Adebola Street, Imowo, Ijebu Ode"
+        android:textSize="20sp"
+        android:layout_margin="10dp"
+        android:textColor="@color/colorPrimary"/>
+
+    <EditText
+        android:id="@+id/repayment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:hint="today's payment e.g 1500"
+        android:textSize="20sp"
+        android:layout_centerInParent="true"
+        android:layout_below="@id/address"
+        android:layout_margin="10dp"/>
+
+    <Button
+        android:id="@+id/add_transaction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ADD PAYMENT"
+        android:background="@color/colorPrimary"
+        android:textColor="@android:color/white"
+        android:layout_below="@id/repayment"
+        android:layout_margin="10dp"
+        android:padding="10dp"
+        android:textSize="20sp"
+        android:layout_centerHorizontal="true"/>
+
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/account_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/add_transaction"
+        android:layout_margin="10dp"/>
+
+
+
+</RelativeLayout>

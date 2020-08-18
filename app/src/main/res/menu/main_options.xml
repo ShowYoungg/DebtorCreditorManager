@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item  android:id="@+id/disb" android:title="Disbursement"/>
+    <item  android:id="@+id/bal" android:title="Balance"/>
+    <item  android:id="@+id/sync" android:title="Sync with Cloud"/>
+    <item  android:id="@+id/disb_month" android:title="Recent Disbursement"/>
+
+</menu>

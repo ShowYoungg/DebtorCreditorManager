@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">DebtorCreditorManager</string>
+    <string name="confirm_transaction">Transaction Confirmation</string>
+</resources>
