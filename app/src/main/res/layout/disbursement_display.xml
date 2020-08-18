@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="25/10/2020"
+        android:textSize="20sp"
+        android:gravity="center_horizontal"
+        android:textColor="@color/colorPrimary"
+        android:layout_margin="10dp"
+        tools:ignore="MissingPrefix" />
+
+    <LinearLayout
+        android:id="@+id/layout_disb"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="10dp"
+        android:weightSum="5"
+        android:layout_below="@id/date">
+
+        <TextView
+            android:id="@+id/description_of_disbursement"
+            android:layout_width="0dp"
+            android:layout_weight="3"
+            android:layout_height="wrap_content"
+            android:text="Tolulope Adeyemi"
+            android:layout_below="@+id/date"
+            android:layout_margin="10dp"
+            android:textSize="20sp"
+            android:textColor="@color/colorPrimary"
+            tools:ignore="MissingPrefix" />
+
+        <TextView
+            android:id="@+id/disbursement_amount"
+            android:layout_width="0dp"
+            android:layout_weight="2"
+            android:layout_height="wrap_content"
+            android:text="#60000"
+            android:layout_below="@+id/date"
+            android:layout_margin="10dp"
+            android:textSize="20sp"
+            android:gravity="center_horizontal"
+            tools:ignore="MissingPrefix"
+            android:textColor="@color/colorPrimary"/>
+
+    </LinearLayout>
+
+</RelativeLayout>
