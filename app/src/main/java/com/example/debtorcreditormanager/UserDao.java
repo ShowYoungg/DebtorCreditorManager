@@ -31,8 +31,8 @@ public interface UserDao {
             " WHERE accountNumber =:accountNumber")
     void updateUser(String accountNumber, String customerName,String lastDate, String address, String disbursement,String disbursementDate, String balance);
 
-    @Query("SELECT count(*) FROM CustomerList")
-    Long getDatabaseCount();
+    @Query("SELECT count(*) FROM customer")
+    Long getTransactionCount();
 
     @Query("DELETE FROM CustomerList WHERE accountNumber =:accountNumber")
     void deleteUser(String accountNumber);

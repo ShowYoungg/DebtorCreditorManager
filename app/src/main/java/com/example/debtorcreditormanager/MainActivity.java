@@ -3,12 +3,14 @@ package com.example.debtorcreditormanager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,8 +41,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.sync:
-                mViewModel.syncNewUserWithCloud(list);
+            case R.id.update_cloud:
+                try {
+                    mViewModel.getUsersDataFromCloud();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //Toast.makeText(this, cr.get(0).getCustomerName() , Toast.LENGTH_SHORT).show();
+                mViewModel.uploadUserDataToCloud(list);
+                //This for loop will ensure retries for ten times
+                for (int i = 0; i < 10; i++){
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            mViewModel.uploadUserDataToCloud(list);
+                        }
+                    }, 1500);
+                }
                 break;
 
             case R.id.disb:

@@ -1,6 +1,7 @@
 package com.example.debtorcreditormanager;
 
 import android.content.Context;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -12,9 +13,21 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 import androidx.lifecycle.LiveData;
 import retrofit2.Call;
@@ -34,7 +47,7 @@ public class Repository {
     public Repository(Context context) {
         mContext = context.getApplicationContext();
         mDao = UserDatabase.getInstance(context).mDao();
-        getDailyData();
+        getTransactionFromCloud();
     }
 
     public static Repository getInstance(Context context) {
@@ -42,64 +55,126 @@ public class Repository {
             mRepository = new Repository(context);
         }
         return mRepository;
-
     }
 
 
-    public void getUsersDataFromCloud() {
-        if (mUserListener != null) {
-            mUserListener.onStarted();
-        }
-
-        GetDataService dataService = RetrofitInstance.getService();
-        dataService.getResults().enqueue(new Callback<List<CustomerRecord>>() {
-            @Override
-            public void onResponse(Call<List<CustomerRecord>> call, Response<List<CustomerRecord>> response) {
-                customerRecordList = response.body();
-                Log.i("RETROFIT", customerRecordList.get(0).getCustomerName());
-                if (customerRecordList != null) {
-                    Toast.makeText(mContext, customerRecordList.get(0).getCustomerName(), Toast.LENGTH_SHORT).show();
-
-//                    if (mUserListener != null) {
-//                        mUserListener.onSuccess(info.getItems());
-//                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<CustomerRecord>> call, Throwable t) {
-                if (mUserListener != null) {
-                    mUserListener.onFailed(t.getMessage());
-                    Log.i("RETROFIT_FAILURE", t.getMessage());
-                }
-                t.printStackTrace();
-
-
-            }
-        });
+    public List<CustomerRecord> getUsersDataFromCloud() throws IOException {
+        return downloadJSON();
     }
 
-    private void getDailyData() {
-        if (mUserListener != null) {
-            mUserListener.onStarted();
-        }
+    private List<CustomerRecord> downloadJSON() {
 
-        GetDataService dataService = RetrofitInstance.getService();
-        dataService.getCustomerResults().enqueue(new Callback<Info>() {
+        final List<CustomerRecord>[] l = new List[]{new ArrayList<>()};
+        new AsyncTask<Void, Void, String>() {
+
             @Override
-            public void onResponse(Call<Info> call, Response<Info> response) {
-                Info info = response.body();
-                if (info != null && info.getItems() != null) {
-                    if (mUserListener != null) {
-                        mUserListener.onSuccess(info.getItems());
-                        // mListMutableLiveData.setValue(info.getItems());
-                    }
-                    //System.out.println(info.getItems());
-                }
+            protected void onPreExecute() {
+                super.onPreExecute();
             }
 
             @Override
-            public void onFailure(Call<Info> call, Throwable t) {
+            protected String doInBackground(Void... voids) {
+
+                String jsonResponse = "";
+                try {
+                    jsonResponse = getHTTPResponse();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //Log.i("JSonRESPONSE", jsonResponse);
+                return jsonResponse;
+            }
+
+            @Override
+            protected void onPostExecute(String jsonResponse) {
+                super.onPostExecute(jsonResponse);
+                l[0] = parseCustemrJSON(jsonResponse);
+                Log.i("JSONRESPONSE", jsonResponse);
+            }
+        }.execute();
+        return l[0];
+    }
+
+
+    private List<CustomerRecord> parseCustemrJSON(String json) {
+        List<CustomerRecord> custList = new ArrayList<>();
+        try {
+            JSONObject mainJSONObject = new JSONObject(json);
+            JSONArray itemsArray = mainJSONObject.getJSONArray("items");
+
+//            for (Iterator<String> it = itemsArray.getJSONObject(0).keys(); it.hasNext(); ) {
+//                String s = it.next();
+//                Log.i("CHILDOBJECT", s);
+//            }
+
+            for (int i = 0; i < itemsArray.length(); i++){
+                JSONObject childObject = itemsArray.getJSONObject(i);
+                String accountNumber = childObject.getString("AccountNumber");
+                String accountName = childObject.getString("AccountName");
+                String disbursement = childObject.getString("Disbursement");
+                String balance = childObject.getString("Balance");
+                String disbursementDate = childObject.getString("DisbursementDate");
+                String lastDate = childObject.getString("LastDate");
+                String address = childObject.getString("Address");
+
+                CustomerRecord customerRecord = new CustomerRecord();
+                customerRecord.setAccountNumber(Integer.valueOf(accountNumber));
+                customerRecord.setCustomerName(accountName);
+                customerRecord.setDisbursement(disbursement);
+                customerRecord.setBalance(balance);
+                customerRecord.setDisbursementDate(disbursementDate);
+                customerRecord.setLastDate(lastDate);
+                customerRecord.setAddress(address);
+
+                Toast.makeText(mContext, accountName, Toast.LENGTH_SHORT).show();
+
+                custList.add(customerRecord);
+            }
+        } catch (JSONException je) {
+            je.printStackTrace();
+        }
+        return custList;
+    }
+
+    private String getHTTPResponse() throws IOException {
+        String URL_BASE = "https://script.google.com/macros/s/AKfycbzCryw_kR4EB4wrh74a-bFyYHVWmZ7sWEvyTZnClfXYaOK9yWM/exec?action=read_user_details";
+        URL url = null;
+        try {
+            url = new URL(URL_BASE);
+        } catch (MalformedURLException exception) {
+            Log.e("URL_CREATION", "Error creating URL", exception);
+        }
+
+        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+        try {
+            InputStream in = urlConnection.getInputStream();
+            Scanner scanner = new Scanner(in);
+            scanner.useDelimiter("\\A");
+
+            boolean hasInput = scanner.hasNext();
+            if (hasInput) {
+                return scanner.next();
+            } else return null;
+        } finally {
+            urlConnection.disconnect();
+        }
+    }
+
+    public List<Customer> getTransactionFromCloud() {
+        if (mUserListener != null) {
+            mUserListener.onStarted();
+        }
+        final List<Customer>[] customerList = new List[]{new ArrayList<>()};
+
+        GetDataService dataService = RetrofitBuilder.Retrieve();
+        dataService.getTransactionFromCloud().enqueue(new Callback<List<Customer>>() {
+            @Override
+            public void onResponse(Call<List<Customer>> call, Response<List<Customer>> response) {
+                customerList[0] = response.body();
+            }
+
+            @Override
+            public void onFailure(Call<List<Customer>> call, Throwable t) {
                 if (mUserListener != null) {
                     mUserListener.onFailed(t.getMessage());
                 }
@@ -107,6 +182,7 @@ public class Repository {
             }
         });
 
+        return customerList[0];
     }
 
 
@@ -140,7 +216,7 @@ public class Repository {
                     @Override
                     public void onResponse(String response) {
                         Log.i("ERRR", response);
-                        Toast.makeText(mContext, response, Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(mContext, response, Toast.LENGTH_SHORT).show();
                     }
                 },
                 new com.android.volley.Response.ErrorListener() {
@@ -231,7 +307,7 @@ public class Repository {
                     @Override
                     public void onResponse(String response) {
                         Log.i("ERRR", response);
-                        Toast.makeText(mContext, response, Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(mContext, response, Toast.LENGTH_SHORT).show();
                     }
                 },
                 new com.android.volley.Response.ErrorListener() {
@@ -270,21 +346,21 @@ public class Repository {
     }
 
 
-    public void deleteUser(String accountNumber) {
-        AppExecutors.getInstance().diskIO().execute(() -> mDao.deleteUser(accountNumber));
-        GetDataService dataService = RetrofitInstance.getService();
-        dataService.deleteUser(accountNumber).enqueue(new Callback<Customer>() {
-            @Override
-            public void onResponse(Call<Customer> call, Response<Customer> response) {
-                //Utils.newInstance().toast(mContext, "delete succesfully!");
-            }
-
-            @Override
-            public void onFailure(Call<Customer> call, Throwable t) {
-                t.printStackTrace();
-            }
-        });
-    }
+//    public void deleteUser(String accountNumber) {
+//        AppExecutors.getInstance().diskIO().execute(() -> mDao.deleteUser(accountNumber));
+//        GetDataService dataService = RetrofitBuilder.getService();
+//        dataService.deleteUser(accountNumber).enqueue(new Callback<Customer>() {
+//            @Override
+//            public void onResponse(Call<Customer> call, Response<Customer> response) {
+//                //Utils.newInstance().toast(mContext, "delete succesfully!");
+//            }
+//
+//            @Override
+//            public void onFailure(Call<Customer> call, Throwable t) {
+//                t.printStackTrace();
+//            }
+//        });
+//    }
 
     public void deleteUserLocally(String accountNumber) {
         AppExecutors.getInstance().diskIO().execute(new Runnable() {
@@ -320,7 +396,7 @@ public class Repository {
                     @Override
                     public void onResponse(String response) {
                         Log.i("ERRR", response);
-                        Toast.makeText(mContext, response, Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(mContext, response, Toast.LENGTH_SHORT).show();
                     }
                 },
                 new com.android.volley.Response.ErrorListener() {

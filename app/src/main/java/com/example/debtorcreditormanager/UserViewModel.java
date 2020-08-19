@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
+import java.io.IOException;
 import java.util.List;
 
 public class UserViewModel extends AndroidViewModel {
@@ -19,7 +20,7 @@ public class UserViewModel extends AndroidViewModel {
     }
 
 
-    public void syncNewUserWithCloud(List<CustomerRecord> customerRecordList) {
+    public void uploadUserDataToCloud(List<CustomerRecord> customerRecordList) {
         for (CustomerRecord c: customerRecordList) {
             Handler h = new Handler();
             h.postAtTime(new Runnable() {
@@ -29,8 +30,18 @@ public class UserViewModel extends AndroidViewModel {
                 }
             }, 500);
         }
-        mRepository.getUsersDataFromCloud();
     }
+
+    public List<CustomerRecord> getUsersDataFromCloud() throws IOException {
+        return mRepository.getUsersDataFromCloud();
+    }
+
+    public List<Customer> getTransactionFromCloud() {
+        return mRepository.getTransactionFromCloud();
+    }
+
+
+
 
     public void insertNewUserToCloud(CustomerRecord customerRecord) {
         mRepository.insertNewUserToCloud(customerRecord);
@@ -48,9 +59,9 @@ public class UserViewModel extends AndroidViewModel {
         mRepository.insertTransactionToCloud(customer);
     }
 
-    public void deleteUser(String phone_number) {
-        mRepository.deleteUser(phone_number);
-    }
+//    public void deleteUser(String phone_number) {
+//        mRepository.deleteUser(phone_number);
+//    }
 
     public void deleteUserLocally(String accountNumber) {
         mRepository.deleteUserLocally(accountNumber);

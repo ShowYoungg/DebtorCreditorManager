@@ -13,10 +13,10 @@ import retrofit2.http.POST;
 public interface GetDataService {
 
     @GET("/macros/s/AKfycbzCryw_kR4EB4wrh74a-bFyYHVWmZ7sWEvyTZnClfXYaOK9yWM/exec?action=read_user_details")
-    Call<List<CustomerRecord>> getResults();
+    Call<List<CustomerRecord>> getCustomerRecordsFromCloud();
 
     @GET("/macros/s/AKfycbzCryw_kR4EB4wrh74a-bFyYHVWmZ7sWEvyTZnClfXYaOK9yWM/exec?action=read_customer_details")
-    Call<Info> getCustomerResults();
+    Call<List<Customer>> getTransactionFromCloud();
 
 
     @POST("/macros/s/AKfycbxv2qHdE6-GAS-JqEKzAkIvRDetPNd6ua5wT2DmDBD7od8Kxhs/exec?action=add_new_user")
