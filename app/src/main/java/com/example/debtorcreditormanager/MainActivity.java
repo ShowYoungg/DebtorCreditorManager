@@ -1,13 +1,5 @@
 package com.example.debtorcreditormanager;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProviders;
-import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -19,6 +11,14 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -38,8 +38,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch(item.getItemId()){
+        switch (item.getItemId()) {
             case R.id.sync:
+                mViewModel.syncNewUserWithCloud(list);
                 break;
 
             case R.id.disb:
@@ -53,8 +54,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.disb_month:
                 productAdapter.setCustomersList(list, "Recent");
                 break;
-
-
         }
         return super.onOptionsItemSelected(item);
     }
@@ -94,7 +93,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int swipeDir) {
                 int position = viewHolder.getAdapterPosition();
                 int accountNumber = list.get(position).getAccountNumber();
-                if (list.get(position).getBalance().equals(String.valueOf(0))){
+                if (list.get(position).getBalance().equals(String.valueOf(0))) {
                     updateDialog(accountNumber, list.get(position).getCustomerName());
                 } else {
                     Toast.makeText(MainActivity.this, "The customer has not repaid balance due", Toast.LENGTH_SHORT).show();

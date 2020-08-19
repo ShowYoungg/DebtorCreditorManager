@@ -1,6 +1,7 @@
 package com.example.debtorcreditormanager;
 
 import android.app.Application;
+import android.os.Handler;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -18,12 +19,20 @@ public class UserViewModel extends AndroidViewModel {
     }
 
 
-//    public void insertTransaction(Customer customer) {
-//        mRepository.insertUserLocally(customer);
-//    }
+    public void syncNewUserWithCloud(List<CustomerRecord> customerRecordList) {
+        for (CustomerRecord c: customerRecordList) {
+            Handler h = new Handler();
+            h.postAtTime(new Runnable() {
+                @Override
+                public void run() {
+                    mRepository.syncronizeNewUserWithCloud(c);
+                }
+            }, 500);
+        }
+        mRepository.getUsersDataFromCloud();
+    }
 
     public void insertNewUserToCloud(CustomerRecord customerRecord) {
-        Toast.makeText( getApplication().getApplicationContext(), "going 2", Toast.LENGTH_SHORT).show();
         mRepository.insertNewUserToCloud(customerRecord);
     }
 

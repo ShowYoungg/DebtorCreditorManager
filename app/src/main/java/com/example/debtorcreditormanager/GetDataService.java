@@ -1,6 +1,8 @@
 package com.example.debtorcreditormanager;
 
 
+import java.util.List;
+
 import retrofit2.Call;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
@@ -11,7 +13,7 @@ import retrofit2.http.POST;
 public interface GetDataService {
 
     @GET("/macros/s/AKfycbzCryw_kR4EB4wrh74a-bFyYHVWmZ7sWEvyTZnClfXYaOK9yWM/exec?action=read_user_details")
-    Call<Info> getResults();
+    Call<List<CustomerRecord>> getResults();
 
     @GET("/macros/s/AKfycbzCryw_kR4EB4wrh74a-bFyYHVWmZ7sWEvyTZnClfXYaOK9yWM/exec?action=read_customer_details")
     Call<Info> getCustomerResults();

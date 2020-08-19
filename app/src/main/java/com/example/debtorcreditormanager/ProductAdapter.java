@@ -3,13 +3,19 @@ package com.example.debtorcreditormanager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import androidx.appcompat.app.AlertDialog;
@@ -56,11 +62,34 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         if (customer != null) {
             if (state.equals("Disbursement")) {
                 holder.balance.setText("DISB: #" + String.valueOf(customer.getDisbursement()));
+
+                holder.dateLastDisbursed.setText(customer.getDisbursementDate());
+                holder.customerName.setText(customer.getCustomerName());
+            } else if (state.equals("Recent")){
+
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(new Date());
+                String recentMonth = String.valueOf(Integer.valueOf(cal.get(Calendar.MONTH)) + 1);
+                String year = String.valueOf(cal.get(Calendar.YEAR));
+
+                String m = customer.getDisbursementDate();
+                String[] mm = m.split("/");
+
+                String disbursementMonth = String.valueOf(Integer.valueOf(mm[1]));
+
+                Log.i("DATE_DIFFERENCE", disbursementMonth + "/" + recentMonth);
+
+                if (disbursementMonth.equals(recentMonth)){
+                    holder.dateLastDisbursed.setText(customer.getDisbursementDate());
+                    holder.customerName.setText(customer.getCustomerName());
+
+                    holder.balance.setText("DISB: #" + String.valueOf(customer.getBalance()));
+                }
             } else {
                 holder.balance.setText("BAL: #" + String.valueOf(customer.getBalance()));
+                holder.dateLastDisbursed.setText(customer.getDisbursementDate());
+                holder.customerName.setText(customer.getCustomerName());
             }
-            holder.dateLastDisbursed.setText(customer.getDisbursementDate());
-            holder.customerName.setText(customer.getCustomerName());
         }
 
         holder.layout.setOnClickListener(new View.OnClickListener() {
