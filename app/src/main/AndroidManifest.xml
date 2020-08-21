@@ -12,9 +12,19 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".DisbursementActivity"></activity>
-        <activity android:name=".AccountActivity" />
-        <activity android:name=".AddEntryActivity" />
+        <activity android:name=".DisbursementActivity" />
+        <activity android:name=".AccountActivity">
+        <meta-data
+            android:name="android.support.PARENT_ACTIVITY"
+            android:value="com.example.debtorcreditormanager.MainActivity" />
+        </activity>
+
+        <activity android:name=".AddEntryActivity">
+        <meta-data
+            android:name="android.support.PARENT_ACTIVITY"
+            android:value="com.example.debtorcreditormanager.MainActivity" />
+        </activity>
+
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

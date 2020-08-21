@@ -6,22 +6,23 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
-
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NavUtils;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -40,10 +41,28 @@ public class AccountActivity extends AppCompatActivity implements View.OnClickLi
     private int bal;
     private TextView address, disbursement, balance, name;
 
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        switch (id) {
+            case android.R.id.home:
+                NavUtils.navigateUpFromSameTask(this);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_account);
+
+        ActionBar actionBar = this.getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+
 
         mViewModel = ViewModelProviders.of(this).get(UserViewModel.class);
 
@@ -80,7 +99,7 @@ public class AccountActivity extends AppCompatActivity implements View.OnClickLi
 
     private void setUpViewModel(String name) {
         mViewModel.getCustomerTransaction(name).observe(this, customerList1 -> {
-        accountAdapter.setAccountList(customerList1);
+            accountAdapter.setAccountList(customerList1);
         });
     }
 
@@ -89,12 +108,12 @@ public class AccountActivity extends AppCompatActivity implements View.OnClickLi
     public void onClick(View v) {
 
         if (repayment.getText().toString().isEmpty() || repayment.getText().toString().equals("") ||
-                repayment.getText().toString().startsWith("0")){
+                repayment.getText().toString().startsWith("0")) {
             Toast.makeText(this, "Input today's repayment", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (Integer.valueOf(customerRecord.getBalance()) < Integer.valueOf(repayment.getText().toString().trim())){
+        if (Integer.valueOf(customerRecord.getBalance()) < Integer.valueOf(repayment.getText().toString().trim())) {
             Toast.makeText(this, "Input amount less or equal to balance", Toast.LENGTH_LONG).show();
             return;
         }
@@ -115,7 +134,7 @@ public class AccountActivity extends AppCompatActivity implements View.OnClickLi
         customer.setDate(s);
 
         confirmationMessage = "Confirm the below information before continuing \n" + "Account Name: " + customer.getCustomerName() + "\n" +
-        "Account Number: " + customer.getAccountNumber() + "\n" + "Today's repayment: #" + repayment.getText().toString() + "\n" +
+                "Account Number: " + customer.getAccountNumber() + "\n" + "Today's repayment: #" + repayment.getText().toString() + "\n" +
                 "Balance: #" + bal;
         confirmationDialog(confirmationMessage, customer, bal);
     }
@@ -136,7 +155,7 @@ public class AccountActivity extends AppCompatActivity implements View.OnClickLi
                                 customer.getDate(), customerRecord.getAddress(), customerRecord.getDisbursement(),
                                 customerRecord.getDisbursementDate(), String.valueOf(bal));
 
-                        if (isOnline()){
+                        if (isOnline()) {
                             //Insert transaction to cloud
 
                             mViewModel.insertTransactionToCloud(customer);
