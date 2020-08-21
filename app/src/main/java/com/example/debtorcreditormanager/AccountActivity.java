@@ -13,6 +13,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -136,6 +138,7 @@ public class AccountActivity extends AppCompatActivity implements View.OnClickLi
 
                         if (isOnline()){
                             //Insert transaction to cloud
+
                             mViewModel.insertTransactionToCloud(customer);
 
                             //Update user details on cloud e.g balance and new lastDate

@@ -10,6 +10,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.text.DateFormat;

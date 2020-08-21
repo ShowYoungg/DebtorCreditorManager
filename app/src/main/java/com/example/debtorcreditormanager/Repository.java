@@ -24,30 +24,33 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
 import androidx.lifecycle.LiveData;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import androidx.lifecycle.ViewModel;
 
 public class Repository {
     private static final String TAG = "UserRepository";
     private static Context mContext = null;
     private static Repository mRepository;
-    private List<CustomerRecord> customerRecordList;
+    public static List<CustomerRecord> staticCustomerList;
+    public static List<Customer> staticTransactionList;
+    private LiveData<List<Customer>> customerList1;
     private final String INSERT_URL_STRING = "https://script.google.com/macros/s/AKfycbzCryw_kR4EB4wrh74a-bFyYHVWmZ7sWEvyTZnClfXYaOK9yWM/exec";
     UserListener mUserListener;
     UserDao mDao;
+    int cloudCount = 0;
+    int localCount = 0;
 
 
     public Repository(Context context) {
         mContext = context.getApplicationContext();
         mDao = UserDatabase.getInstance(context).mDao();
+
         getTransactionFromCloud();
+        getUsersDataFromCloud();
     }
 
     public static Repository getInstance(Context context) {
@@ -58,13 +61,17 @@ public class Repository {
     }
 
 
-    public List<CustomerRecord> getUsersDataFromCloud() throws IOException {
-        return downloadJSON();
+    public List<CustomerRecord> getUsersDataFromCloud() {
+        String URL_BASE = "https://script.google.com/macros/s/AKfycbzCryw_kR4EB4wrh74a-bFyYHVWmZ7sWEvyTZnClfXYaOK9yWM/exec?action=read_user_details";
+
+        //String json = downloadJSON(URL_BASE);
+        return downloadJSON(URL_BASE);
     }
 
-    private List<CustomerRecord> downloadJSON() {
+    private List<CustomerRecord> downloadJSON(String urll) {
 
         final List<CustomerRecord>[] l = new List[]{new ArrayList<>()};
+        //final String[] s = new String[1];
         new AsyncTask<Void, Void, String>() {
 
             @Override
@@ -77,7 +84,7 @@ public class Repository {
 
                 String jsonResponse = "";
                 try {
-                    jsonResponse = getHTTPResponse();
+                    jsonResponse = getHTTPResponse(urll);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -88,7 +95,8 @@ public class Repository {
             @Override
             protected void onPostExecute(String jsonResponse) {
                 super.onPostExecute(jsonResponse);
-                l[0] = parseCustemrJSON(jsonResponse);
+                //s[0] = jsonResponse;
+                l[0] = parseCustomerJSON(jsonResponse);
                 Log.i("JSONRESPONSE", jsonResponse);
             }
         }.execute();
@@ -96,18 +104,14 @@ public class Repository {
     }
 
 
-    private List<CustomerRecord> parseCustemrJSON(String json) {
+    private List<CustomerRecord> parseCustomerJSON(String json) {
+        staticCustomerList = new ArrayList<>();
         List<CustomerRecord> custList = new ArrayList<>();
         try {
             JSONObject mainJSONObject = new JSONObject(json);
             JSONArray itemsArray = mainJSONObject.getJSONArray("items");
 
-//            for (Iterator<String> it = itemsArray.getJSONObject(0).keys(); it.hasNext(); ) {
-//                String s = it.next();
-//                Log.i("CHILDOBJECT", s);
-//            }
-
-            for (int i = 0; i < itemsArray.length(); i++){
+            for (int i = 0; i < itemsArray.length(); i++) {
                 JSONObject childObject = itemsArray.getJSONObject(i);
                 String accountNumber = childObject.getString("AccountNumber");
                 String accountName = childObject.getString("AccountName");
@@ -129,6 +133,7 @@ public class Repository {
                 Toast.makeText(mContext, accountName, Toast.LENGTH_SHORT).show();
 
                 custList.add(customerRecord);
+                staticCustomerList.add(customerRecord);
             }
         } catch (JSONException je) {
             je.printStackTrace();
@@ -136,11 +141,70 @@ public class Repository {
         return custList;
     }
 
-    private String getHTTPResponse() throws IOException {
-        String URL_BASE = "https://script.google.com/macros/s/AKfycbzCryw_kR4EB4wrh74a-bFyYHVWmZ7sWEvyTZnClfXYaOK9yWM/exec?action=read_user_details";
+    private List<Customer> parseTransactionJSON(String urll) {
+        List<Customer> custList = new ArrayList<>();
+
+        new AsyncTask<Void, Void, String>(){
+
+            @Override
+            protected String doInBackground(Void... voids) {
+                String jsonResponse = "";
+                try {
+                    jsonResponse = getHTTPResponse(urll);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //Log.i("JSonRESPONSE", jsonResponse);
+                return jsonResponse;
+
+            }
+
+            @Override
+            protected void onPostExecute(String s) {
+                super.onPostExecute(s);
+
+                staticTransactionList = new ArrayList<>();
+                try {
+                    JSONObject mainJSONObject = new JSONObject(s);
+                    JSONArray itemsArray = mainJSONObject.getJSONArray("items");
+
+                    for (int i = 0; i < itemsArray.length(); i++) {
+                        JSONObject childObject = itemsArray.getJSONObject(i);
+                        String accountNumber = childObject.getString("AccountNumber");
+                        String accountName = childObject.getString("AccountName");
+                        String date = childObject.getString("Date");
+                        String disbursement = childObject.getString("Disbursement");
+                        String payment = childObject.getString("Payment");
+                        String balance = childObject.getString("Balance");
+                        String disbursementDate = childObject.getString("DisbursementDate");
+
+                        Customer customer = new Customer();
+                        customer.setAccountNumber(Integer.valueOf(accountNumber));
+                        customer.setCustomerName(accountName);
+                        customer.setDisbursement(disbursement);
+                        customer.setBalance(balance);
+                        customer.setDisbursementDate(disbursementDate);
+                        customer.setDate(date);
+                        customer.setPayback(payment);
+
+                        //Toast.makeText(mContext, "Transaction from " + accountName, Toast.LENGTH_SHORT).show();
+
+                        custList.add(customer);
+                        staticTransactionList.add(customer);
+                    }
+                } catch (JSONException je) {
+                    je.printStackTrace();
+                }
+            }
+        }.execute();
+        return custList;
+    }
+
+
+    private String getHTTPResponse(String urll) throws IOException {
         URL url = null;
         try {
-            url = new URL(URL_BASE);
+            url = new URL(urll);
         } catch (MalformedURLException exception) {
             Log.e("URL_CREATION", "Error creating URL", exception);
         }
@@ -161,30 +225,10 @@ public class Repository {
     }
 
     public List<Customer> getTransactionFromCloud() {
-        if (mUserListener != null) {
-            mUserListener.onStarted();
-        }
-        final List<Customer>[] customerList = new List[]{new ArrayList<>()};
-
-        GetDataService dataService = RetrofitBuilder.Retrieve();
-        dataService.getTransactionFromCloud().enqueue(new Callback<List<Customer>>() {
-            @Override
-            public void onResponse(Call<List<Customer>> call, Response<List<Customer>> response) {
-                customerList[0] = response.body();
-            }
-
-            @Override
-            public void onFailure(Call<List<Customer>> call, Throwable t) {
-                if (mUserListener != null) {
-                    mUserListener.onFailed(t.getMessage());
-                }
-                t.printStackTrace();
-            }
-        });
-
-        return customerList[0];
+        String URL_BASE = "https://script.google.com/macros/s/AKfycbzCryw_kR4EB4wrh74a-bFyYHVWmZ7sWEvyTZnClfXYaOK9yWM/exec?action=read_user_transactions";
+        //String transactionJson = downloadJSON(URL_BASE);
+        return parseTransactionJSON(URL_BASE);
     }
-
 
     public void insertNewUserLocally(final CustomerRecord customerRecord) {
         AppExecutors.getInstance().diskIO().execute(new Runnable() {
@@ -193,7 +237,6 @@ public class Repository {
                 mDao.insertNewUser(customerRecord);
             }
         });
-
     }
 
 
@@ -204,7 +247,6 @@ public class Repository {
                 mDao.insertTransaction(customer);
             }
         });
-
     }
 
 
@@ -254,14 +296,29 @@ public class Repository {
         queue.add(stringRequest);
     }
 
+    public int[] updateTransactionInCloud(){
+
+        cloudCount = staticTransactionList.size();
+        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                localCount = mDao.getTransactionCount();
+            }
+        });
+
+        Toast.makeText(mContext, staticCustomerList.size() + "%%%%" + cloudCount, Toast.LENGTH_SHORT).show();
+        return new int[] {localCount, cloudCount};
+    }
 
     public void insertTransactionToCloud(Customer customer) {
+        //Toast.makeText(mContext, customerJson, Toast.LENGTH_LONG).show();
+
         StringRequest stringRequest = new StringRequest(Request.Method.POST, INSERT_URL_STRING,
                 new com.android.volley.Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
                         Log.i("ERRR", response);
-                        Toast.makeText(mContext, response, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(mContext, response, Toast.LENGTH_LONG).show();
                     }
                 },
                 new com.android.volley.Response.ErrorListener() {
@@ -300,6 +357,47 @@ public class Repository {
 
 
     }
+
+    public void insertTransactionToCloudInBatches(String json) {
+        //Toast.makeText(mContext, customerJson, Toast.LENGTH_LONG).show();
+
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, INSERT_URL_STRING,
+                new com.android.volley.Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.i("ERRR", response);
+                        Toast.makeText(mContext, response, Toast.LENGTH_LONG).show();
+                    }
+                },
+                new com.android.volley.Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.i("ERROR_RESPONSE", error.getLocalizedMessage());
+                    }
+                }
+        ) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> parmas = new HashMap<>();
+
+                //here we pass params
+                parmas.put("action", "add_batch_transaction");
+                parmas.put("jso", json);
+
+                return parmas;
+            }
+        };
+
+        int socketTimeOut = 50000;// u can change this .. here it is 50 seconds
+
+        RetryPolicy retryPolicy = new DefaultRetryPolicy(socketTimeOut, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT);
+        stringRequest.setRetryPolicy(retryPolicy);
+
+        RequestQueue queue = Volley.newRequestQueue(mContext);
+
+        queue.add(stringRequest);
+    }
+
 
     public void updateUserInCloud(CustomerRecord customerRecord) {
         StringRequest stringRequest = new StringRequest(Request.Method.POST, INSERT_URL_STRING,
@@ -380,6 +478,11 @@ public class Repository {
         return mDao.getAllTransaction();
     }
 
+    public LiveData<List<Customer>> getTransactionById(int id) {
+        return mDao.getTransactionById(id);
+    }
+
+
     public LiveData<List<Customer>> getCustomerTransaction(String accountName) {
         return mDao.getCustomerTransaction(accountName);
     }
@@ -389,7 +492,7 @@ public class Repository {
         AppExecutors.getInstance().diskIO().execute(() -> mDao.updateUser(accountNumber, customerName, lastDate, address, disbursement, disbursementDate, balance));
     }
 
-    public void syncronizeNewUserWithCloud(CustomerRecord customerRecord) {
+    public void updateUserDataInCloud(CustomerRecord customerRecord) {
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, INSERT_URL_STRING,
                 new com.android.volley.Response.Listener<String>() {
@@ -432,9 +535,18 @@ public class Repository {
         RequestQueue queue = Volley.newRequestQueue(mContext);
 
         queue.add(stringRequest);
+    }
 
+    public void deleteAllTransactionLocally() {
+        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                mDao.deleteAllTransaction();
+            }
+        });
 
     }
+
 
 
 }

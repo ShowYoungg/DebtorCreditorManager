@@ -2,13 +2,11 @@ package com.example.debtorcreditormanager;
 
 import android.app.Application;
 import android.os.Handler;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
-import java.io.IOException;
 import java.util.List;
 
 public class UserViewModel extends AndroidViewModel {
@@ -26,13 +24,13 @@ public class UserViewModel extends AndroidViewModel {
             h.postAtTime(new Runnable() {
                 @Override
                 public void run() {
-                    mRepository.syncronizeNewUserWithCloud(c);
+                    mRepository.updateUserDataInCloud(c);
                 }
             }, 500);
         }
     }
 
-    public List<CustomerRecord> getUsersDataFromCloud() throws IOException {
+    public List<CustomerRecord> getUsersDataFromCloud(){
         return mRepository.getUsersDataFromCloud();
     }
 
@@ -55,9 +53,18 @@ public class UserViewModel extends AndroidViewModel {
         mRepository.insertTransactionLocally(customer);
     }
 
+    public void insertTransactionToCloudInBatches(String json) {
+        mRepository.insertTransactionToCloudInBatches(json);
+    }
+
     public void insertTransactionToCloud(Customer customer) {
         mRepository.insertTransactionToCloud(customer);
     }
+
+    public int[] updateTransactionInCloud() {
+        return mRepository.updateTransactionInCloud();
+    }
+
 
 //    public void deleteUser(String phone_number) {
 //        mRepository.deleteUser(phone_number);
@@ -76,6 +83,11 @@ public class UserViewModel extends AndroidViewModel {
         return mRepository.getTransaction();
     }
 
+    public LiveData<List<Customer>> getTransactionById(int id) {
+        return mRepository.getTransactionById(id);
+    }
+
+
     public LiveData<List<Customer>> getCustomerTransaction(String accountName) {
         return mRepository.getCustomerTransaction(accountName);
     }
@@ -89,5 +101,8 @@ public class UserViewModel extends AndroidViewModel {
         mRepository.updateUserLocally(accountNumber, customerName, lastDate, address, disbursement, disbursementDate, balance);
     }
 
+    public void deleteAllTransactions() {
+        mRepository.deleteAllTransactionLocally();
+    }
 
 }

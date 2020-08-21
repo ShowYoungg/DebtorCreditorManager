@@ -7,30 +7,35 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 
-public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductViewHolder> {
+public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductViewHolder> implements Filterable {
 
     private Context mContext;
     private List<CustomerRecord> list = new ArrayList<>();
+    private List<CustomerRecord> list2 = new ArrayList<>();
     private String state;
 
     public void setCustomersList(List<CustomerRecord> customersList, String state) {
         this.state = state;
         this.list = customersList;
+        if (list != null) {
+            list2 = new ArrayList<>(list);
+        }
         notifyDataSetChanged();
     }
 
@@ -65,7 +70,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
                 holder.dateLastDisbursed.setText(customer.getDisbursementDate());
                 holder.customerName.setText(customer.getCustomerName());
-            } else if (state.equals("Recent")){
+            } else if (state.equals("Recent")) {
 
                 Calendar cal = Calendar.getInstance();
                 cal.setTime(new Date());
@@ -79,16 +84,16 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
                 Log.i("DATE_DIFFERENCE", disbursementMonth + "/" + recentMonth);
 
-                if (disbursementMonth.equals(recentMonth)){
+                if (disbursementMonth.equals(recentMonth)) {
                     holder.dateLastDisbursed.setText(customer.getDisbursementDate());
-                    holder.customerName.setText(customer.getCustomerName());
+                    holder.customerName.setText(customer.getAccountNumber() + ". " + customer.getCustomerName());
 
-                    holder.balance.setText("DISB: #" + String.valueOf(customer.getBalance()));
+                    holder.balance.setText("DISB: #" + String.valueOf(customer.getDisbursement()));
                 }
             } else {
                 holder.balance.setText("BAL: #" + String.valueOf(customer.getBalance()));
                 holder.dateLastDisbursed.setText(customer.getDisbursementDate());
-                holder.customerName.setText(customer.getCustomerName());
+                holder.customerName.setText(customer.getAccountNumber() + ". " + customer.getCustomerName());
             }
         }
 
@@ -145,6 +150,58 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             }
         }).setCancelable(false).show();
     }
+
+    @Override
+    public Filter getFilter() {
+        return exampleFilter;
+    }
+
+    private Filter exampleFilter = new Filter() {
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {
+            ArrayList<CustomerRecord> filteredList = new ArrayList<>();
+            Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
+            boolean isNumber = false;
+            if (constraint == null || constraint.length() == 0) {
+                filteredList.addAll(list2);
+            } else {
+                String filterPattern = constraint.toString().toLowerCase().trim();
+                if (pattern.matcher(filterPattern).matches()) {
+                    isNumber = true;
+                }
+
+                if (isNumber) {
+                    Toast.makeText(mContext, "A", Toast.LENGTH_SHORT).show();
+                    for (CustomerRecord customerRecord : list2) {
+                        if (customerRecord.getAccountNumber() == Integer.valueOf(filterPattern)) {
+                            filteredList.add(customerRecord);
+                        }
+                    }
+                } else {
+                    Toast.makeText(mContext, "B", Toast.LENGTH_SHORT).show();
+                    for (CustomerRecord customerR : list2) {
+                        Log.i("CUSTOMERS_NAMES", customerR.getCustomerName() + " " + filterPattern);
+                        if (customerR.getCustomerName().toLowerCase().startsWith(filterPattern)) {
+                            filteredList.add(customerR);
+                        }
+                    }
+                }
+
+
+            }
+            FilterResults results = new FilterResults();
+            results.values = filteredList;
+            return results;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            list.clear();
+            list.addAll((List) results.values);
+            notifyDataSetChanged();
+        }
+    };
+
 
 }
 

@@ -1,5 +1,8 @@
 package com.example.debtorcreditormanager;
 
+import android.app.Application;
+import android.app.SearchManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -10,17 +13,22 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import java.io.IOException;
+import com.google.gson.Gson;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import static com.example.debtorcreditormanager.Repository.staticCustomerList;
+import static com.example.debtorcreditormanager.Repository.staticTransactionList;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -29,36 +37,96 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private UserViewModel mViewModel;
     private ProductAdapter productAdapter;
     private List<CustomerRecord> list;
+    private List<Customer> customerlist;
+    private Application application = getApplication();
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
         getMenuInflater().inflate(R.menu.main_options, menu);
-        return super.onCreateOptionsMenu(menu);
+
+        //Associate searchable configuration with the SearchView
+        SearchView searchView = (SearchView) menu.findItem(R.id.search_bar).getActionView();
+
+        searchView.setQueryHint("Search by name or number");
+        searchView.setSubmitButtonEnabled(false);
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                productAdapter.getFilter().filter(newText);
+                return false;
+            }
+        });
+
+        return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.update_cloud:
-                try {
-                    mViewModel.getUsersDataFromCloud();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                //Toast.makeText(this, cr.get(0).getCustomerName() , Toast.LENGTH_SHORT).show();
-                mViewModel.uploadUserDataToCloud(list);
-                //This for loop will ensure retries for ten times
-                for (int i = 0; i < 10; i++){
-                    Handler handler = new Handler();
-                    handler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
+
+                mViewModel.getUsersDataFromCloud();
+                mViewModel.getTransactionFromCloud();
+                Handler h = new Handler();
+                h.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        //The number of transaction records on cloud is compared against that of the local
+                        //if local = cloud, the transactions are up to date;
+                        //else if local is greater than cloud, it means there are pending transctions yet to be moved to cloud; hence update cloud;
+                        //else, delete local and download from cloud to update local. Also customers' details will be deleted from local and be updated from cloud
+                        int[] countDifference = mViewModel.updateTransactionInCloud();
+                        if (countDifference[0] == countDifference[1]){
+                            Toast.makeText(MainActivity.this, "Transaction is up to date", Toast.LENGTH_SHORT).show();
+                        } else if (countDifference[0] > countDifference[1]){
+                            //Because there are transactions yet to be uploaded to cloud, upload those now.
+                            mViewModel.getTransactionById(countDifference[1] + 1).observe(MainActivity.this, customerL -> {
+                                Toast.makeText(MainActivity.this, "Uploading to cloud", Toast.LENGTH_SHORT).show();
+
+                                String json = new Gson().toJson(customerL);
+                                mViewModel.insertTransactionToCloudInBatches(json);
+
+                            });
+
+                            //This is to update the user data in the cloud.
+                            //This for loop will ensure retries for 5 more times
                             mViewModel.uploadUserDataToCloud(list);
+                            for (int i = 0; i < 5; i++){
+                                Handler handler = new Handler();
+                                handler.postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        mViewModel.uploadUserDataToCloud(list);
+                                    }
+                                }, 5000);
+                            }
+
+                        } else {
+                            Toast.makeText(MainActivity.this, staticTransactionList.size() + "size" + staticCustomerList.size(), Toast.LENGTH_SHORT).show();
+                            //All transactions are deleted from local and re inserted from output from cloud
+                            mViewModel.deleteAllTransactions();
+                            for (Customer c : staticTransactionList) {
+                                mViewModel.insertTrasanctionLocally(c);
+                            }
+
+                            //This will download customers data from cloud and insert into local database
+                            for (CustomerRecord cr: staticCustomerList) {
+                                Toast.makeText(MainActivity.this, "Welcome from cloud " + cr.getDisbursement(), Toast.LENGTH_SHORT).show();
+                                mViewModel.insertNewUserLocally(cr);
+                            }
                         }
-                    }, 1500);
-                }
+                    }
+                }, 10000); //Wait for ten seconds
+
                 break;
 
             case R.id.disb:
@@ -82,7 +150,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         list = new ArrayList<>();
-        mViewModel = ViewModelProviders.of(this).get(UserViewModel.class);
+//        mViewModel = ViewModelProviders.of(this).get(UserViewModel.class);
+        //mViewModel = ViewModelProviders.of(this).get(UserViewModel.class);
+
+        mViewModel = ViewModelProviders.of(this, new MyViewModelFactory(this.getApplication())).get(UserViewModel.class);
+        //mViewModel= new ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory.getInstance(this.getApplication())).get(UserViewModel.class);
+
         recyclerView = findViewById(R.id.customer_list);
         floatingActionImage = findViewById(R.id.floating_action_image);
 
