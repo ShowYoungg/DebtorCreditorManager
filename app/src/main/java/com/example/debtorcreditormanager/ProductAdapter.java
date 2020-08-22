@@ -13,14 +13,20 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
+
+import static com.example.debtorcreditormanager.MainActivity.moneyDue;
+import static com.example.debtorcreditormanager.MainActivity.moneyInBusiness;
 
 
 public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductViewHolder> implements Filterable {
@@ -30,8 +36,14 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     private List<CustomerRecord> list2 = new ArrayList<>();
     private String state;
 
+
     public void setCustomersList(List<CustomerRecord> customersList, String state) {
+
         this.state = state;
+        if (state.equals("")) {
+            moneyInBusiness = 0;
+            moneyDue = 0;
+        }
         this.list = customersList;
         if (list != null) {
             list2 = new ArrayList<>(list);
@@ -64,36 +76,57 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         //Always declare your object inside here; never set it as a global object
         final CustomerRecord customer = list.get(position);
 
+        long dayDifference;
         if (customer != null) {
             if (state.equals("Disbursement")) {
                 holder.balance.setText("DISB: #" + String.valueOf(customer.getDisbursement()));
 
                 holder.dateLastDisbursed.setText(customer.getDisbursementDate());
                 holder.customerName.setText(customer.getCustomerName());
-            } else if (state.equals("Recent")) {
 
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(new Date());
-                String recentMonth = String.valueOf(Integer.valueOf(cal.get(Calendar.MONTH)) + 1);
-                String year = String.valueOf(cal.get(Calendar.YEAR));
+                holder.balance.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
+                holder.dateLastDisbursed.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
+                holder.customerName.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
 
-                String m = customer.getDisbursementDate();
-                String[] mm = m.split("/");
-
-                String disbursementMonth = String.valueOf(Integer.valueOf(mm[1]));
-
-                Log.i("DATE_DIFFERENCE", disbursementMonth + "/" + recentMonth);
-
-                if (disbursementMonth.equals(recentMonth)) {
-                    holder.dateLastDisbursed.setText(customer.getDisbursementDate());
-                    holder.customerName.setText(customer.getAccountNumber() + ". " + customer.getCustomerName());
-
-                    holder.balance.setText("DISB: #" + String.valueOf(customer.getDisbursement()));
-                }
             } else {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+                DateFormat dateFormat2 = new SimpleDateFormat("dd/MM/yyyy");
+
+                try {
+                    Date d1 = dateFormat.parse(customer.getDisbursementDate());
+                    Date d2 = dateFormat.parse(dateFormat2.format(new Date()));
+
+                    long difference = d2.getTime() - d1.getTime();
+                    dayDifference = TimeUnit.MILLISECONDS.toDays(difference);
+                    Log.i("TIMEDIFFER", difference + "/" + dayDifference);
+
+                    if (dayDifference >= 31 && Integer.valueOf(customer.getBalance()) > 0){
+                        holder.balance.setTextColor(mContext.getResources().getColor(R.color.due));
+                        holder.dateLastDisbursed.setTextColor(mContext.getResources().getColor(R.color.due));
+                        holder.customerName.setTextColor(mContext.getResources().getColor(R.color.due));
+
+                        moneyDue += Integer.valueOf(customer.getBalance());
+                    } else if (dayDifference == 30 && Integer.valueOf(customer.getBalance()) > 0){
+                        holder.balance.setTextColor(mContext.getResources().getColor(R.color.about));
+                        holder.dateLastDisbursed.setTextColor(mContext.getResources().getColor(R.color.about));
+                        holder.customerName.setTextColor(mContext.getResources().getColor(R.color.about));
+
+                        moneyDue += Integer.valueOf(customer.getBalance());
+                    } else {
+                        holder.balance.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
+                        holder.dateLastDisbursed.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
+                        holder.customerName.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
+                    }
+                } catch (ParseException pe){
+                    pe.printStackTrace();
+                }
+
+
                 holder.balance.setText("BAL: #" + String.valueOf(customer.getBalance()));
                 holder.dateLastDisbursed.setText(customer.getDisbursementDate());
                 holder.customerName.setText(customer.getAccountNumber() + ". " + customer.getCustomerName());
+
+                moneyInBusiness += Integer.valueOf(customer.getBalance());
             }
         }
 

@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,6 +17,8 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import androidx.annotation.NonNull;
@@ -37,8 +40,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private UserViewModel mViewModel;
     private ProductAdapter productAdapter;
     private List<CustomerRecord> list;
+    private List<CustomerRecord> recentlist;
     private List<Customer> customerlist;
     private Application application = getApplication();
+    public static int recentDisbursement;
+    public static int recentRepayment;
+    public static int moneyInBusiness;
+    public static int moneyDue;
+
+
 
 
     @Override
@@ -138,7 +148,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.disb_month:
-                productAdapter.setCustomersList(list, "Recent");
+                productAdapter.setCustomersList(recentlist, "Disbursement");
+                break;
+
+            case R.id.analytics:
+                startActivity(new Intent(this, DisbursementActivity.class));
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -150,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         list = new ArrayList<>();
-//        mViewModel = ViewModelProviders.of(this).get(UserViewModel.class);
+        moneyInBusiness = 0;
         //mViewModel = ViewModelProviders.of(this).get(UserViewModel.class);
 
         mViewModel = ViewModelProviders.of(this, new MyViewModelFactory(this.getApplication())).get(UserViewModel.class);
@@ -218,9 +232,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void setUpViewModel() {
+        recentDisbursement = 0;
+        recentRepayment = 0;
         mViewModel.getCustomerList().observe(this, customerRecords -> {
             list = customerRecords;
             productAdapter.setCustomersList(customerRecords, "");
+
+            //The below lines of code sorts recent disbursements and stores them inside recentMonth
+            recentlist = new ArrayList<>();
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(new Date());
+            String recentMonth = String.valueOf(Integer.valueOf(cal.get(Calendar.MONTH)) + 1);
+            String year = String.valueOf(cal.get(Calendar.YEAR));
+
+            for (CustomerRecord cr : list) {
+                String m = cr.getDisbursementDate();
+                String[] mm = m.split("/");
+
+                String disbursementMonth = String.valueOf(Integer.valueOf(mm[1]));
+
+                if (disbursementMonth.equals(recentMonth)) {
+                    recentlist.add(cr);
+
+                    recentDisbursement += Integer.valueOf(cr.getDisbursement());
+                    recentRepayment += Integer.valueOf(cr.getDisbursement()) - Integer.valueOf(cr.getBalance());
+                }
+            }
         });
     }
 

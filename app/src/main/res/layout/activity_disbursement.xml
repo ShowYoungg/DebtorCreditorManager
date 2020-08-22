@@ -6,9 +6,12 @@
     android:layout_height="match_parent"
     tools:context=".DisbursementActivity">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/disbursement_list"
+    <TextView
+        android:id="@+id/money_in_business"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:textColor="@color/colorPrimary"
+        android:layout_margin="10dp"/>
 
 </RelativeLayout>

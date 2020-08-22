@@ -49,8 +49,8 @@ public class Repository {
         mContext = context.getApplicationContext();
         mDao = UserDatabase.getInstance(context).mDao();
 
-        getTransactionFromCloud();
-        getUsersDataFromCloud();
+        //getTransactionFromCloud();
+        //getUsersDataFromCloud();
     }
 
     public static Repository getInstance(Context context) {

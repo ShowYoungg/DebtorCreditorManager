@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -60,6 +61,13 @@ public class AccountAdapter extends RecyclerView.Adapter<AccountAdapter.ProductV
                 holder.description.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
                 holder.amount.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
             }
+
+//            holder.layout.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//
+//                }
+//            });
         }
     }
 
@@ -75,12 +83,14 @@ public class AccountAdapter extends RecyclerView.Adapter<AccountAdapter.ProductV
 
         private TextView description;
         private TextView amount;
+        private LinearLayout layout;
 
         public ProductViewHolder(View itemView) {
             super(itemView);
 
             description = itemView.findViewById(R.id.description);
             amount = itemView.findViewById(R.id.amount);
+            layout = itemView.findViewById(R.id.layout);
         }
     }
 }
