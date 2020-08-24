@@ -18,16 +18,17 @@ public class UserViewModel extends AndroidViewModel {
     }
 
 
-    public void uploadUserDataToCloud(List<CustomerRecord> customerRecordList) {
-        for (CustomerRecord c: customerRecordList) {
-            Handler h = new Handler();
-            h.postAtTime(new Runnable() {
-                @Override
-                public void run() {
-                    mRepository.updateUserDataInCloud(c);
-                }
-            }, 500);
-        }
+    public void uploadUserDataToCloud(String json) {
+        mRepository.updateUserDataInCloud(json);
+//        for (CustomerRecord c: customerRecordList) {
+//            Handler h = new Handler();
+//            h.postAtTime(new Runnable() {
+//                @Override
+//                public void run() {
+//                    mRepository.updateUserDataInCloud(c);
+//                }
+//            }, 1000);
+//        }
     }
 
     public List<CustomerRecord> getUsersDataFromCloud(){
@@ -66,9 +67,9 @@ public class UserViewModel extends AndroidViewModel {
     }
 
 
-//    public void deleteUser(String phone_number) {
-//        mRepository.deleteUser(phone_number);
-//    }
+    public int getLocalCount() {
+        return mRepository.getLocalCount();
+    }
 
     public void deleteUserLocally(String accountNumber) {
         mRepository.deleteUserLocally(accountNumber);
@@ -92,6 +93,11 @@ public class UserViewModel extends AndroidViewModel {
         return mRepository.getCustomerTransaction(accountName);
     }
 
+    public LiveData<List<Customer>> getTodaysTransactions(String date) {
+        return mRepository.getTodaysTransactions(date);
+    }
+
+
 
     public void updateUserInCloud(CustomerRecord customerRecord) {
         mRepository.updateUserInCloud(customerRecord);
@@ -103,6 +109,10 @@ public class UserViewModel extends AndroidViewModel {
 
     public void deleteAllTransactions() {
         mRepository.deleteAllTransactionLocally();
+    }
+
+    public void deleteAllCustomerData() {
+        mRepository.deleteAllCustomerDataLocally();
     }
 
 }

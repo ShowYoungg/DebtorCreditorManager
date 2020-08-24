@@ -27,7 +27,10 @@ public interface UserDao {
     @Query("SELECT * FROM customer WHERE customerName =:accountName")
     LiveData<List<Customer>> getCustomerTransaction(String accountName);
 
-    @Query("SELECT * FROM customer WHERE id >=:id")
+    @Query("SELECT * FROM customer WHERE date =:date")
+    LiveData<List<Customer>> getTodaysTransactions(String date);
+
+    @Query("SELECT * FROM customer WHERE id > :id")
     LiveData<List<Customer>> getTransactionById(int id);
 
 
@@ -44,7 +47,7 @@ public interface UserDao {
     @Query("DELETE FROM customer")
     void deleteAllTransaction();
 
-//    @Query("DELETE * FROM customer")
-//    void deleteAll();
+    @Query("DELETE FROM CustomerList")
+    void deleteAllCustomerDetails();
 
 }

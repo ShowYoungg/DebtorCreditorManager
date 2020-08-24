@@ -1,8 +1,7 @@
 package com.example.debtorcreditormanager;
 
 import android.app.Application;
-import android.app.SearchManager;
-import android.content.Context;
+import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,7 +10,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -36,6 +38,7 @@ import static com.example.debtorcreditormanager.Repository.staticTransactionList
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private RecyclerView recyclerView;
+    public static ProgressBar progressBar;
     private ImageView floatingActionImage;
     private UserViewModel mViewModel;
     private ProductAdapter productAdapter;
@@ -48,8 +51,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public static int moneyInBusiness;
     public static int moneyDue;
 
-
-
+    public static ProgressBar getProgressBar(){
+        return progressBar;
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -83,8 +87,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (item.getItemId()) {
             case R.id.update_cloud:
 
+                progressBar.setVisibility(View.VISIBLE);
                 mViewModel.getUsersDataFromCloud();
                 mViewModel.getTransactionFromCloud();
+                mViewModel.getLocalCount();
                 Handler h = new Handler();
                 h.postDelayed(new Runnable() {
                     @Override
@@ -95,30 +101,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         //else if local is greater than cloud, it means there are pending transctions yet to be moved to cloud; hence update cloud;
                         //else, delete local and download from cloud to update local. Also customers' details will be deleted from local and be updated from cloud
                         int[] countDifference = mViewModel.updateTransactionInCloud();
-                        if (countDifference[0] == countDifference[1]){
+
+                        if (countDifference[1] == -1) {
+                            Toast.makeText(MainActivity.this, "Connect to the internet", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        Log.i("SIZET", countDifference[0] + "/" + countDifference[1]);
+
+                        if (countDifference[0] == countDifference[1]) {
                             Toast.makeText(MainActivity.this, "Transaction is up to date", Toast.LENGTH_SHORT).show();
-                        } else if (countDifference[0] > countDifference[1]){
+                            progressBar.setVisibility(View.GONE);
+
+                        } else if (countDifference[0] > countDifference[1]) {
                             //Because there are transactions yet to be uploaded to cloud, upload those now.
-                            mViewModel.getTransactionById(countDifference[1] + 1).observe(MainActivity.this, customerL -> {
-                                Toast.makeText(MainActivity.this, "Uploading to cloud", Toast.LENGTH_SHORT).show();
+                            Log.i("SIZET", countDifference[0] + "/" + countDifference[1]);
+
+                            mViewModel.getTransactionById(countDifference[1]).observe(MainActivity.this, customerL -> {
+                                Toast.makeText(MainActivity.this, "Uploading to cloud " + "size: " + customerL.size() , Toast.LENGTH_SHORT).show();
 
                                 String json = new Gson().toJson(customerL);
                                 mViewModel.insertTransactionToCloudInBatches(json);
-
                             });
 
                             //This is to update the user data in the cloud.
-                            //This for loop will ensure retries for 5 more times
-                            mViewModel.uploadUserDataToCloud(list);
-                            for (int i = 0; i < 5; i++){
-                                Handler handler = new Handler();
-                                handler.postDelayed(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        mViewModel.uploadUserDataToCloud(list);
-                                    }
-                                }, 5000);
-                            }
+                            String detailJson = new Gson().toJson(list);
+                            mViewModel.uploadUserDataToCloud(detailJson);
 
                         } else {
                             Toast.makeText(MainActivity.this, staticTransactionList.size() + "size" + staticCustomerList.size(), Toast.LENGTH_SHORT).show();
@@ -129,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             }
 
                             //This will download customers data from cloud and insert into local database
-                            for (CustomerRecord cr: staticCustomerList) {
+                            for (CustomerRecord cr : staticCustomerList) {
                                 Toast.makeText(MainActivity.this, "Welcome from cloud " + cr.getDisbursement(), Toast.LENGTH_SHORT).show();
                                 mViewModel.insertNewUserLocally(cr);
                             }
@@ -137,6 +145,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 }, 10000); //Wait for ten seconds
 
+                break;
+
+            case R.id.clear_data:
+                //customDialog();
+                customDialog();
                 break;
 
             case R.id.disb:
@@ -163,14 +176,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        list = new ArrayList<>();
         moneyInBusiness = 0;
         //mViewModel = ViewModelProviders.of(this).get(UserViewModel.class);
 
+        progressBar = findViewById(R.id.progress_bar);
+
         mViewModel = ViewModelProviders.of(this, new MyViewModelFactory(this.getApplication())).get(UserViewModel.class);
-        //mViewModel= new ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory.getInstance(this.getApplication())).get(UserViewModel.class);
 
         recyclerView = findViewById(R.id.customer_list);
+        progressBar.setVisibility(View.VISIBLE);
+
         floatingActionImage = findViewById(R.id.floating_action_image);
 
         productAdapter = new ProductAdapter(MainActivity.this);
@@ -179,10 +194,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(productAdapter);
 
-        setUpViewModel();
+        //setUpViewModel();
         floatingActionImage.setOnClickListener(this);
 
         attachSwipeToDelete();
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        setUpViewModel();
     }
 
     private void attachSwipeToDelete() {
@@ -231,12 +253,55 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }).setCancelable(false).show();
     }
 
+    public void customDialog() {
+        // custom dialog
+        final Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_view);
+        dialog.setCancelable(false);
+        dialog.setTitle("Warning");
+
+        EditText password = dialog.findViewById(R.id.password);
+        Button cancel = dialog.findViewById(R.id.cancel);
+        Button yes = dialog.findViewById(R.id.yes);
+
+        yes.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String pass = password.getText().toString().trim();
+                if (pass.equals("2464")) {
+                    //progressBar.setVisibility(View.VISIBLE);
+                    mViewModel.deleteAllCustomerData();
+                    mViewModel.deleteAllTransactions();
+                    list = new ArrayList<>();
+                    productAdapter.setCustomersList(list, "");
+
+                    dialog.dismiss();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Incorrect password", Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                }
+            }
+        });
+        cancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
+    }
+
     private void setUpViewModel() {
         recentDisbursement = 0;
         recentRepayment = 0;
         mViewModel.getCustomerList().observe(this, customerRecords -> {
+            list = new ArrayList<>();
             list = customerRecords;
-            productAdapter.setCustomersList(customerRecords, "");
+            progressBar.setVisibility(View.GONE);
+            if (!list.isEmpty()) {
+                productAdapter.setCustomersList(customerRecords, "");
+            }
 
             //The below lines of code sorts recent disbursements and stores them inside recentMonth
             recentlist = new ArrayList<>();
@@ -248,6 +313,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             for (CustomerRecord cr : list) {
                 String m = cr.getDisbursementDate();
                 String[] mm = m.split("/");
+                if (mm.length == 1) {
+                    Log.i("REASON", mm.length + "/" + m);
+                    return;
+                }
+
 
                 String disbursementMonth = String.valueOf(Integer.valueOf(mm[1]));
 

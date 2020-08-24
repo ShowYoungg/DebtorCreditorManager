@@ -14,4 +14,10 @@
         android:textColor="@color/colorPrimary"
         android:layout_margin="10dp"/>
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/account_summary_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/money_in_business"/>
+
 </RelativeLayout>

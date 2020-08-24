@@ -1,8 +1,11 @@
 package com.example.debtorcreditormanager;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.android.volley.DefaultRetryPolicy;
@@ -29,7 +32,8 @@ import java.util.Map;
 import java.util.Scanner;
 
 import androidx.lifecycle.LiveData;
-import androidx.lifecycle.ViewModel;
+
+import static com.example.debtorcreditormanager.MainActivity.progressBar;
 
 public class Repository {
     private static final String TAG = "UserRepository";
@@ -42,15 +46,27 @@ public class Repository {
     UserListener mUserListener;
     UserDao mDao;
     int cloudCount = 0;
-    int localCount = 0;
+    public int localCount = 0;
 
 
     public Repository(Context context) {
         mContext = context.getApplicationContext();
         mDao = UserDatabase.getInstance(context).mDao();
 
-        //getTransactionFromCloud();
-        //getUsersDataFromCloud();
+        getTransactionFromCloud();
+        getUsersDataFromCloud();
+        localCount = getLocalCount();
+
+    }
+
+    public int getLocalCount() {
+        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                localCount = mDao.getTransactionCount();
+            }
+        });
+        return localCount;
     }
 
     public static Repository getInstance(Context context) {
@@ -130,7 +146,7 @@ public class Repository {
                 customerRecord.setLastDate(lastDate);
                 customerRecord.setAddress(address);
 
-                Toast.makeText(mContext, accountName, Toast.LENGTH_SHORT).show();
+                //Toast.makeText(mContext, accountName, Toast.LENGTH_SHORT).show();
 
                 custList.add(customerRecord);
                 staticCustomerList.add(customerRecord);
@@ -144,7 +160,7 @@ public class Repository {
     private List<Customer> parseTransactionJSON(String urll) {
         List<Customer> custList = new ArrayList<>();
 
-        new AsyncTask<Void, Void, String>(){
+        new AsyncTask<Void, Void, String>() {
 
             @Override
             protected String doInBackground(Void... voids) {
@@ -197,6 +213,7 @@ public class Repository {
                 }
             }
         }.execute();
+        //progressBar.setVisibility(View.GONE);
         return custList;
     }
 
@@ -296,18 +313,17 @@ public class Repository {
         queue.add(stringRequest);
     }
 
-    public int[] updateTransactionInCloud(){
+    public int[] updateTransactionInCloud() {
 
-        cloudCount = staticTransactionList.size();
-        AppExecutors.getInstance().diskIO().execute(new Runnable() {
-            @Override
-            public void run() {
-                localCount = mDao.getTransactionCount();
-            }
-        });
+        if (staticTransactionList != null) {
+            cloudCount = staticTransactionList.size();
+        } else {
+            cloudCount = -1;
+        }
 
-        Toast.makeText(mContext, staticCustomerList.size() + "%%%%" + cloudCount, Toast.LENGTH_SHORT).show();
-        return new int[] {localCount, cloudCount};
+
+        //Toast.makeText(mContext, staticCustomerList.size() + "%%%%" + cloudCount, Toast.LENGTH_SHORT).show();
+        return new int[]{localCount, cloudCount};
     }
 
     public void insertTransactionToCloud(Customer customer) {
@@ -367,12 +383,13 @@ public class Repository {
                     public void onResponse(String response) {
                         Log.i("ERRR", response);
                         Toast.makeText(mContext, response, Toast.LENGTH_LONG).show();
+                        progressBar.setVisibility(View.GONE);
                     }
                 },
                 new com.android.volley.Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.i("ERROR_RESPONSE", error.getLocalizedMessage());
+                        //Log.i("ERROR_RESPONSE", error.getLocalizedMessage());
                     }
                 }
         ) {
@@ -487,18 +504,23 @@ public class Repository {
         return mDao.getCustomerTransaction(accountName);
     }
 
+    public LiveData<List<Customer>> getTodaysTransactions(String date) {
+        return mDao.getTodaysTransactions(date);
+    }
+
 
     public void updateUserLocally(String accountNumber, String customerName, String lastDate, String address, String disbursement, String disbursementDate, String balance) {
         AppExecutors.getInstance().diskIO().execute(() -> mDao.updateUser(accountNumber, customerName, lastDate, address, disbursement, disbursementDate, balance));
     }
 
-    public void updateUserDataInCloud(CustomerRecord customerRecord) {
+    public void updateUserDataInCloud(String detailJson) {
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, INSERT_URL_STRING,
                 new com.android.volley.Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
                         Log.i("ERRR", response);
+                        //progressBar.setVisibility(View.GONE);
                         //Toast.makeText(mContext, response, Toast.LENGTH_SHORT).show();
                     }
                 },
@@ -515,13 +537,14 @@ public class Repository {
 
                 //here we pass params
                 parmas.put("action", "sync");
-                parmas.put("account_number", String.valueOf(customerRecord.getAccountNumber()));
-                parmas.put("customer_name", customerRecord.getCustomerName());
-                parmas.put("disbursement", customerRecord.getDisbursement());
-                parmas.put("balance", customerRecord.getBalance());
-                parmas.put("disbursement_date", customerRecord.getDisbursementDate());
-                parmas.put("date", customerRecord.getLastDate());
-                parmas.put("address", customerRecord.getAddress());
+                parmas.put("syn", detailJson);
+//                parmas.put("account_number", String.valueOf(customerRecord.getAccountNumber()));
+//                parmas.put("customer_name", customerRecord.getCustomerName());
+//                parmas.put("disbursement", customerRecord.getDisbursement());
+//                parmas.put("balance", customerRecord.getBalance());
+//                parmas.put("disbursement_date", customerRecord.getDisbursementDate());
+//                parmas.put("date", customerRecord.getLastDate());
+//                parmas.put("address", customerRecord.getAddress());
 
                 return parmas;
             }
@@ -529,7 +552,8 @@ public class Repository {
 
         int socketTimeOut = 90000;// u can change this .. here it is 50000 = 50 seconds
 
-        RetryPolicy retryPolicy = new DefaultRetryPolicy(socketTimeOut, 5, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT);
+        RetryPolicy retryPolicy = new DefaultRetryPolicy(socketTimeOut, 0, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT);
+        stringRequest.setShouldCache(false);
         stringRequest.setRetryPolicy(retryPolicy);
 
         RequestQueue queue = Volley.newRequestQueue(mContext);
@@ -544,9 +568,16 @@ public class Repository {
                 mDao.deleteAllTransaction();
             }
         });
-
     }
 
+    public void deleteAllCustomerDataLocally() {
+        AppExecutors.getInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                mDao.deleteAllCustomerDetails();
+            }
+        });
+    }
 
 
 }
