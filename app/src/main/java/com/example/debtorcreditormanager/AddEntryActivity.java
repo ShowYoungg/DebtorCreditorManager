@@ -32,6 +32,7 @@ public class AddEntryActivity extends AppCompatActivity implements View.OnClickL
     private UserViewModel mViewModel;
     private String customerName;
     private int numberOfCustomer;
+    private String addressString;
 
 
     @Override
@@ -70,15 +71,18 @@ public class AddEntryActivity extends AppCompatActivity implements View.OnClickL
             if (intent.hasExtra("CustomerNumber")){
                 numberOfCustomer = intent.getIntExtra("CustomerNumber", -1);
                 customerName = intent.getStringExtra("customerName");
+                addressString = intent.getStringExtra("Address");
             }
 
             if (intent.hasExtra("updatePosition")){
                 numberOfCustomer = intent.getIntExtra("updatePosition", -2);
                 customerName = intent.getStringExtra("customerName");
+                addressString = intent.getStringExtra("Address");
                 register.setText("UPDATE");
             }
         }
         name.setText(customerName);
+        address.setText(addressString);
         register.setOnClickListener(this);
     }
 

@@ -27,7 +27,7 @@ public class UserViewModel extends AndroidViewModel {
 //                public void run() {
 //                    mRepository.updateUserDataInCloud(c);
 //                }
-//            }, 1000);
+//            }, 1500);
 //        }
     }
 

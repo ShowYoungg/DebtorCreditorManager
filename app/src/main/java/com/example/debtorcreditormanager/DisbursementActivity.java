@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -16,9 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProviders;
@@ -27,7 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import static com.example.debtorcreditormanager.MainActivity.moneyDue;
 import static com.example.debtorcreditormanager.MainActivity.moneyInBusiness;
-import static com.example.debtorcreditormanager.MainActivity.recentDisbursement;
+import static com.example.debtorcreditormanager.MainActivity.monthDisbursements;
 import static com.example.debtorcreditormanager.MainActivity.recentRepayment;
 
 public class DisbursementActivity extends AppCompatActivity {
@@ -62,10 +59,10 @@ public class DisbursementActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.account_summary_list);
         analysis = findViewById(R.id.money_in_business);
 
-        double d = Double.valueOf((recentDisbursement * 0.1) / moneyInBusiness);
+        double d = Double.valueOf((monthDisbursements * 0.1) / moneyInBusiness);
         analysis.setText("Business Analytics" + "\n\n" +
                 "Investment: " + moneyInBusiness + "\n" +
-                "Recent Disbursements: " + recentDisbursement + "\n" +
+                "Recent Disbursements: " + monthDisbursements + "\n" +
                 "Recent Payment: " + recentRepayment + "\n" +
                 "ROI without Penalty: " + Math.round(d * 100.0) / 100.0 + "\n\n" +
                 "Amount due: " + moneyDue + "\n" +
@@ -102,7 +99,7 @@ public class DisbursementActivity extends AppCompatActivity {
      * */
     private void loadTransactions(String s) {
         mViewModel.getTodaysTransactions(s).observe(this, customerList1 -> {
-            summaryList = new ArrayList<>();
+            //summaryList = new ArrayList<>();
             HashMap<String, String[]> set = new HashMap<>();
             for (Customer c : customerList1) {
                 if (c.getDate().equals(s)) {
@@ -118,7 +115,6 @@ public class DisbursementActivity extends AppCompatActivity {
                         Log.i("PAYMENT"," " + todayRepayments);
                     }
                     set.put(s, new String[]{s,String.valueOf(todayDisbursements), String.valueOf(todayRepayments)});
-                    //summaryList.add(new String[]{s,String.valueOf(todayDisbursements), String.valueOf(todayRepayments)});
                 }
             }
             summaryList.addAll(set.values());

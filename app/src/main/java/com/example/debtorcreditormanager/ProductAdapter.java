@@ -25,9 +25,6 @@ import java.util.regex.Pattern;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
-import static com.example.debtorcreditormanager.MainActivity.moneyDue;
-import static com.example.debtorcreditormanager.MainActivity.moneyInBusiness;
-
 
 public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductViewHolder> implements Filterable {
 
@@ -41,8 +38,8 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
         this.state = state;
         if (state.equals("")) {
-            moneyInBusiness = 0;
-            moneyDue = 0;
+            //moneyInBusiness = 0;
+            //moneyDue = 0;
         }
         this.list = customersList;
         if (list != null) {
@@ -105,13 +102,13 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                         holder.dateLastDisbursed.setTextColor(mContext.getResources().getColor(R.color.due));
                         holder.customerName.setTextColor(mContext.getResources().getColor(R.color.due));
 
-                        moneyDue += Integer.valueOf(customer.getBalance());
+                        //moneyDue += Integer.valueOf(customer.getBalance());
                     } else if (dayDifference == 30 && Integer.valueOf(customer.getBalance()) > 0){
                         holder.balance.setTextColor(mContext.getResources().getColor(R.color.about));
                         holder.dateLastDisbursed.setTextColor(mContext.getResources().getColor(R.color.about));
                         holder.customerName.setTextColor(mContext.getResources().getColor(R.color.about));
 
-                        moneyDue += Integer.valueOf(customer.getBalance());
+                        //moneyDue += Integer.valueOf(customer.getBalance());
                     } else {
                         holder.balance.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
                         holder.dateLastDisbursed.setTextColor(mContext.getResources().getColor(R.color.colorPrimary));
@@ -121,12 +118,11 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                     pe.printStackTrace();
                 }
 
-
                 holder.balance.setText("BAL: #" + String.valueOf(customer.getBalance()));
                 holder.dateLastDisbursed.setText(customer.getDisbursementDate());
                 holder.customerName.setText(customer.getAccountNumber() + ". " + customer.getCustomerName());
 
-                moneyInBusiness += Integer.valueOf(customer.getBalance());
+                //moneyInBusiness += Integer.valueOf(customer.getBalance());
             }
         }
 
@@ -134,7 +130,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             @Override
             public void onClick(View v) {
                 if (customer != null && Integer.valueOf(customer.getBalance()) == 0) {
-                    updateDisburseDialog(customer.getAccountNumber(), customer.getCustomerName());
+                    updateDisburseDialog(customer.getAccountNumber(), customer.getCustomerName(), customer.getAddress());
                 } else {
                     mContext.startActivity(new Intent(mContext, AccountActivity.class).putExtra("CustomerRecord", customer));
                 }
@@ -166,7 +162,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         }
     }
 
-    public void updateDisburseDialog(int account, String name) {
+    public void updateDisburseDialog(int account, String name, String address) {
         new AlertDialog.Builder(mContext)
                 .setTitle("Disburse First")
                 .setMessage("You can't perform a transaction on this customer until you disburse. Are you ready to disburse?")
@@ -174,7 +170,8 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         mContext.startActivity(new Intent(mContext, AddEntryActivity.class)
-                                .putExtra("updatePosition", account).putExtra("customerName", name));
+                                .putExtra("updatePosition", account)
+                                .putExtra("customerName", name).putExtra("Address", address));
                     }
                 }).setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
             @Override

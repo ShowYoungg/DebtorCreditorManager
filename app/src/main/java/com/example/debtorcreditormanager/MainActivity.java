@@ -18,10 +18,14 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -46,7 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private List<CustomerRecord> recentlist;
     private List<Customer> customerlist;
     private Application application = getApplication();
-    public static int recentDisbursement;
+    public static int monthDisbursements;
     public static int recentRepayment;
     public static int moneyInBusiness;
     public static int moneyDue;
@@ -104,6 +108,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         if (countDifference[1] == -1) {
                             Toast.makeText(MainActivity.this, "Connect to the internet", Toast.LENGTH_SHORT).show();
+                            progressBar.setVisibility(View.GONE);
                             return;
                         }
 
@@ -118,7 +123,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             Log.i("SIZET", countDifference[0] + "/" + countDifference[1]);
 
                             mViewModel.getTransactionById(countDifference[1]).observe(MainActivity.this, customerL -> {
-                                Toast.makeText(MainActivity.this, "Uploading to cloud " + "size: " + customerL.size() , Toast.LENGTH_SHORT).show();
+                                Toast.makeText(MainActivity.this, "Uploading to cloud", Toast.LENGTH_SHORT).show();
 
                                 String json = new Gson().toJson(customerL);
                                 mViewModel.insertTransactionToCloudInBatches(json);
@@ -138,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                             //This will download customers data from cloud and insert into local database
                             for (CustomerRecord cr : staticCustomerList) {
-                                Toast.makeText(MainActivity.this, "Welcome from cloud " + cr.getDisbursement(), Toast.LENGTH_SHORT).show();
+                                //Toast.makeText(MainActivity.this, "Welcome from cloud " + cr.getDisbursement(), Toast.LENGTH_SHORT).show();
                                 mViewModel.insertNewUserLocally(cr);
                             }
                         }
@@ -180,6 +185,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //mViewModel = ViewModelProviders.of(this).get(UserViewModel.class);
 
         progressBar = findViewById(R.id.progress_bar);
+        progressBar.setEnabled(false);
 
         mViewModel = ViewModelProviders.of(this, new MyViewModelFactory(this.getApplication())).get(UserViewModel.class);
 
@@ -221,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 int position = viewHolder.getAdapterPosition();
                 int accountNumber = list.get(position).getAccountNumber();
                 if (list.get(position).getBalance().equals(String.valueOf(0))) {
-                    updateDialog(accountNumber, list.get(position).getCustomerName());
+                    updateDialog(accountNumber, list.get(position).getCustomerName(), list.get(position).getAddress());
                 } else {
                     Toast.makeText(MainActivity.this, "The customer has not repaid balance due", Toast.LENGTH_SHORT).show();
                 }
@@ -233,7 +239,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         itemTouchHelper.attachToRecyclerView(recyclerView);
     }
 
-    public void updateDialog(int position, String name) {
+    public void updateDialog(int position, String name, String address) {
         new AlertDialog.Builder(MainActivity.this)
                 .setTitle(getResources().getString(R.string.app_name))
                 .setMessage("Do you want to update this account?")
@@ -242,7 +248,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         startActivity(new Intent(getApplicationContext(), AddEntryActivity.class)
-                                .putExtra("updatePosition", position).putExtra("customerName", name));
+                                .putExtra("updatePosition", position)
+                                .putExtra("customerName", name).putExtra("Address", address));
                     }
                 }).setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
             @Override
@@ -293,7 +300,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void setUpViewModel() {
-        recentDisbursement = 0;
+        monthDisbursements = 0;
         recentRepayment = 0;
         mViewModel.getCustomerList().observe(this, customerRecords -> {
             list = new ArrayList<>();
@@ -303,14 +310,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 productAdapter.setCustomersList(customerRecords, "");
             }
 
-            //The below lines of code sorts recent disbursements and stores them inside recentMonth
+            //Gets recent month number; it will further be used to compare recent and past months information
             recentlist = new ArrayList<>();
             Calendar cal = Calendar.getInstance();
             cal.setTime(new Date());
             String recentMonth = String.valueOf(Integer.valueOf(cal.get(Calendar.MONTH)) + 1);
-            String year = String.valueOf(cal.get(Calendar.YEAR));
+            //String year = String.valueOf(cal.get(Calendar.YEAR));
 
             for (CustomerRecord cr : list) {
+
+                //The below lines of code will sort customers whose payments are due and calculate moneyDue
+                try {
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+                    DateFormat dateFormat2 = new SimpleDateFormat("dd/MM/yyyy");
+
+                    Date d1 = dateFormat.parse(cr.getDisbursementDate());
+                    Date d2 = dateFormat.parse(dateFormat2.format(new Date()));
+
+                    long difference = d2.getTime() - d1.getTime();
+                    long dayDifference = TimeUnit.MILLISECONDS.toDays(difference);
+                    Log.i("TIMEDIFFER", difference + "/" + dayDifference);
+                    if (dayDifference >= 30 && Integer.valueOf(cr.getBalance()) > 0){
+                        moneyDue += Integer.valueOf(cr.getBalance());
+                    }
+
+                } catch (ParseException pe){
+                    pe.printStackTrace();
+                }
+
+
+                //The below lines of code sorts recent month and calculate recent information
+                moneyInBusiness += Integer.valueOf(cr.getBalance());
                 String m = cr.getDisbursementDate();
                 String[] mm = m.split("/");
                 if (mm.length == 1) {
@@ -324,7 +354,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (disbursementMonth.equals(recentMonth)) {
                     recentlist.add(cr);
 
-                    recentDisbursement += Integer.valueOf(cr.getDisbursement());
+                    monthDisbursements += Integer.valueOf(cr.getDisbursement());
                     recentRepayment += Integer.valueOf(cr.getDisbursement()) - Integer.valueOf(cr.getBalance());
                 }
             }
