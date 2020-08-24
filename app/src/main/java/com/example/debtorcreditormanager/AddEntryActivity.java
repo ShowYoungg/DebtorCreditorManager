@@ -92,7 +92,7 @@ public class AddEntryActivity extends AppCompatActivity implements View.OnClickL
             mViewModel.updateUserLocally(String.valueOf(numberOfCustomer), customerRecord.getCustomerName(),
                     customerRecord.getLastDate(), customerRecord.getAddress(), customerRecord.getDisbursement(),
                     customerRecord.getDisbursementDate(), customerRecord.getBalance());
-
+//
             mViewModel.insertTrasanctionLocally(customer);
 
             if (isOnline()){
