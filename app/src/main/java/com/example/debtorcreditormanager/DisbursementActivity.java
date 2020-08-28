@@ -59,12 +59,12 @@ public class DisbursementActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.account_summary_list);
         analysis = findViewById(R.id.money_in_business);
 
-        double d = Double.valueOf((monthDisbursements * 0.1) / moneyInBusiness);
+        double roi = Double.valueOf((monthDisbursements * 0.1) / moneyInBusiness);
         analysis.setText("Business Analytics" + "\n\n" +
                 "Investment: " + moneyInBusiness + "\n" +
                 "Recent Disbursements: " + monthDisbursements + "\n" +
                 "Recent Payment: " + recentRepayment + "\n" +
-                "ROI without Penalty: " + Math.round(d * 100.0) / 100.0 + "\n\n" +
+                "ROI without Penalty: " + Math.round(roi * 100.0) / 100.0 + "\n\n" +
                 "Amount due: " + moneyDue + "\n" +
                 "Loss on amount due: " + moneyDue / 10
         );
@@ -75,14 +75,16 @@ public class DisbursementActivity extends AppCompatActivity {
         if (sharedPreferences != null) {
             summaryListJson = sharedPreferences.getString(JSON_KEY, "");
             lastDate = sharedPreferences.getString(LAST_DATE_KEY, "");
+
+            if (!summaryListJson.equals("")) {
+                Gson gson = new Gson();
+                Type type = new TypeToken<List<int[]>>() {
+                }.getType();
+                summaryList = gson.fromJson(summaryListJson, type);
+                Log.i("SUMMARYLIST", summaryListJson);
+            }
         }
 
-        if (summaryListJson != null && summaryListJson.equals("")) {
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<int[]>>() {
-            }.getType();
-            summaryList = gson.fromJson(summaryListJson, type);
-        }
 
         summaryAdapter = new SummaryAdapter(DisbursementActivity.this);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getApplicationContext());
@@ -105,26 +107,26 @@ public class DisbursementActivity extends AppCompatActivity {
                 if (c.getDate().equals(s)) {
                     //Identify today's disbursements
                     if (c.getPayback().equals("0")) {
-
                         todayDisbursements += Integer.valueOf(c.getDisbursement());
-                        Log.i("DISBURSEMENT"," " + todayDisbursements);
+                        Log.i("DISBURSEMENT", " " + todayDisbursements);
                     }
                     //Identify today's repayments
                     if (!c.getPayback().equals("0")) {
                         todayRepayments += Integer.valueOf(c.getPayback());
-                        Log.i("PAYMENT"," " + todayRepayments);
+                        Log.i("PAYMENT", " " + todayRepayments);
                     }
-                    set.put(s, new String[]{s,String.valueOf(todayDisbursements), String.valueOf(todayRepayments)});
+                    set.put(s, new String[]{s, String.valueOf(todayDisbursements), String.valueOf(todayRepayments)});
                 }
             }
             summaryList.addAll(set.values());
             summaryAdapter.setTodaySummary(summaryList);
+
+            Gson gson = new Gson();
+            String json = gson.toJson(summaryList);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString(JSON_KEY, json);
+            editor.putString(LAST_DATE_KEY, s);
+            editor.apply();
         });
-        Gson gson = new Gson();
-        String json = gson.toJson(summaryList);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString(JSON_KEY, json);
-        editor.putString(LAST_DATE_KEY, s);
-        editor.apply();
     }
 }
