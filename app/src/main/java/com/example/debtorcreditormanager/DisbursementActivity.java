@@ -115,10 +115,10 @@ public class DisbursementActivity extends AppCompatActivity {
                         todayRepayments += Integer.valueOf(c.getPayback());
                         Log.i("PAYMENT", " " + todayRepayments);
                     }
-                    set.put(s, new String[]{s, String.valueOf(todayDisbursements), String.valueOf(todayRepayments)});
+                    summaryList.add(new String[]{s, String.valueOf(todayDisbursements), String.valueOf(todayRepayments)});
                 }
             }
-            summaryList.addAll(set.values());
+            //summaryList.addAll(set.values());
             summaryAdapter.setTodaySummary(summaryList);
 
             Gson gson = new Gson();
