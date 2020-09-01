@@ -143,7 +143,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                             //This will download customers data from cloud and insert into local database
                             for (CustomerRecord cr : staticCustomerList) {
-                                //Toast.makeText(MainActivity.this, "Welcome from cloud " + cr.getDisbursement(), Toast.LENGTH_SHORT).show();
                                 mViewModel.insertNewUserLocally(cr);
                             }
                         }

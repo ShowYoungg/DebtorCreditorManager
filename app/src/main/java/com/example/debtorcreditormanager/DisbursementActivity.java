@@ -6,13 +6,8 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.TextView;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -69,64 +64,63 @@ public class DisbursementActivity extends AppCompatActivity {
                 "Loss on amount due: " + moneyDue / 10
         );
 
-        DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
-        String dateString = df.format(new Date()).toString();
-
-        if (sharedPreferences != null) {
-            summaryListJson = sharedPreferences.getString(JSON_KEY, "");
-            lastDate = sharedPreferences.getString(LAST_DATE_KEY, "");
-
-            if (!summaryListJson.equals("")) {
-                Gson gson = new Gson();
-                Type type = new TypeToken<List<int[]>>() {
-                }.getType();
-                summaryList = gson.fromJson(summaryListJson, type);
-                Log.i("SUMMARYLIST", summaryListJson);
-            }
-        }
-
-
         summaryAdapter = new SummaryAdapter(DisbursementActivity.this);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getApplicationContext());
         recyclerView.setLayoutManager(linearLayoutManager);
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(summaryAdapter);
 
-        loadTransactions(dateString);
+        loadTransactions();
     }
 
     /*
      * This method loads all transactions from database and sorts out today's disbursements and repayments
      * @ params: name
      * */
-    private void loadTransactions(String s) {
-        mViewModel.getTodaysTransactions(s).observe(this, customerList1 -> {
-            //summaryList = new ArrayList<>();
+    private void loadTransactions() {
+        mViewModel.getTransactionList().observe(this, customerList1 -> {
             HashMap<String, String[]> set = new HashMap<>();
-            for (Customer c : customerList1) {
-                if (c.getDate().equals(s)) {
-                    //Identify today's disbursements
-                    if (c.getPayback().equals("0")) {
-                        todayDisbursements += Integer.valueOf(c.getDisbursement());
-                        Log.i("DISBURSEMENT", " " + todayDisbursements);
+
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(new Date());
+            String recentMonth = String.valueOf(Integer.valueOf(cal.get(Calendar.MONTH)) + 1);
+
+
+            for (int i = 0; i < customerList1.size(); i++) {
+
+                int dayPayment = 0;
+                int dayDisbursement = 0;
+                String m = customerList1.get(i).getDate();
+                String[] ss = m.split("/");
+                String month = ss[1];
+
+                if (month.equals("0" + recentMonth)) {
+                    if (set.containsKey(customerList1.get(i).getDate())) {
+                        String[] d = set.get(customerList1.get(i).getDate());
+                        if (d != null) {
+                            dayPayment = Integer.valueOf(d[1]);
+                            dayDisbursement = Integer.valueOf(d[2]);
+                        }
                     }
-                    //Identify today's repayments
-                    if (!c.getPayback().equals("0")) {
-                        todayRepayments += Integer.valueOf(c.getPayback());
-                        Log.i("PAYMENT", " " + todayRepayments);
+                    //Identify each day disbursements
+                    if (!customerList1.get(i).getPayback().equals("0")) {
+                        //todayDisbursements += Integer.valueOf(c.getDisbursement());
+
+                        dayPayment += Integer.valueOf(customerList1.get(i).getPayback());
+                        set.put(customerList1.get(i).getDate(), new String[]{customerList1.get(i).getDate(), String.valueOf(dayPayment), String.valueOf(dayDisbursement)});
+                        //Log.i("DISBURSEMENT", " " + todayDisbursements);
                     }
-                    summaryList.add(new String[]{s, String.valueOf(todayDisbursements), String.valueOf(todayRepayments)});
+                    //Identify each day repayments
+                    if (customerList1.get(i).getPayback().equals("0")) {
+                        //todayRepayments += Integer.valueOf(c.getPayback());
+                        dayDisbursement += Integer.valueOf(customerList1.get(i).getDisbursement());
+                        set.put(customerList1.get(i).getDate(), new String[]{customerList1.get(i).getDate(), String.valueOf(dayPayment), String.valueOf(dayDisbursement)});
+                        //Log.i("PAYMENT", " " + todayRepayments);
+                    }
                 }
             }
-            //summaryList.addAll(set.values());
+            summaryList.addAll(set.values());
             summaryAdapter.setTodaySummary(summaryList);
-
-            Gson gson = new Gson();
-            String json = gson.toJson(summaryList);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString(JSON_KEY, json);
-            editor.putString(LAST_DATE_KEY, s);
-            editor.apply();
         });
     }
 }

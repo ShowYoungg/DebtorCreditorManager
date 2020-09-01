@@ -51,8 +51,8 @@ public class SummaryAdapter extends RecyclerView.Adapter<SummaryAdapter.ProductV
 
         if (summary != null) {
             holder.todayDate.setText(summary[0]);
-            holder.todayDisbursement.setText("Disbursement: " + summary[1]);
-            holder.todayRepayment.setText("Repayment: " + summary[2]);
+            holder.todayDisbursement.setText("Disbursement: " + summary[2]);
+            holder.todayRepayment.setText("Repayment: " + summary[1]);
         }
     }
 
