@@ -88,6 +88,7 @@ public class DisbursementActivity extends AppCompatActivity {
 
             for (int i = 0; i < customerList1.size(); i++) {
 
+                //
                 int dayPayment = 0;
                 int dayDisbursement = 0;
                 String m = customerList1.get(i).getDate();
