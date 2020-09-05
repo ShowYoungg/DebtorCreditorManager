@@ -85,7 +85,6 @@ public class DisbursementActivity extends AppCompatActivity {
             cal.setTime(new Date());
             String recentMonth = String.valueOf(Integer.valueOf(cal.get(Calendar.MONTH)) + 1);
 
-
             for (int i = 0; i < customerList1.size(); i++) {
 
                 //
