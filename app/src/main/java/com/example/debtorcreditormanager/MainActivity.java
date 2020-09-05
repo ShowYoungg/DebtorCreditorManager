@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             //Because there are transactions yet to be uploaded to cloud, upload those now.
                             Log.i("SIZET", countDifference[0] + "/" + countDifference[1]);
 
-                            mViewModel.getTransactionList().observe(MainActivity.this, customerL -> {
+                            mViewModel.getTransactionById(countDifference[1]).observe(MainActivity.this, customerL -> {
                                 Toast.makeText(MainActivity.this, "Uploading to cloud", Toast.LENGTH_SHORT).show();
 
                                 String json = new Gson().toJson(customerL);
