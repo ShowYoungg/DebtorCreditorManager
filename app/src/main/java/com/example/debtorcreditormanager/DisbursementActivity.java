@@ -94,7 +94,7 @@ public class DisbursementActivity extends AppCompatActivity {
                 String[] ss = m.split("/");
                 String month = ss[1];
 
-                if (month.equals("0" + recentMonth)) {
+                if (month.equals("0" + recentMonth) || month.equals(recentMonth) ) {
                     if (set.containsKey(customerList1.get(i).getDate())) {
                         String[] d = set.get(customerList1.get(i).getDate());
                         if (d != null) {
@@ -119,6 +119,7 @@ public class DisbursementActivity extends AppCompatActivity {
                     }
                 }
             }
+
             summaryList.addAll(set.values());
             summaryAdapter.setTodaySummary(summaryList);
         });
